@@ -1,24 +1,28 @@
 import pandas as pd
-from sklearn.cluster import DBSCAN
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_samples,silhouette_score
 
 #Leggiamo il dataset
 df = pd.read_csv('../../Desktop/FIA/datasetFinito.csv')
 #Non consideriamo la colonna "titolo" non essendo importante ai fini dell'algoritmo
 X = df.drop(['Titolo'], axis=1)
 
-#Eseguiamo l'algoritmo DBSCAN
-db = DBSCAN(eps=12.6,min_samples=6).fit(X)
+#Creiamo una lista che contenga tutte le somme di distanza quadrata
+# di ogni campione dal centro del cluster più vicino
+clusterErrors = []
 
-#Assegniamo le labels del cluster per ogni campione. Ai campioni rumorosi viene assegnata l'etichetta -1.
-X['Labels'] = db.labels_
-#Settiamo il grafico
-plt.figure(figsize=(12,8))
-#Disegniamo il grafico utilizzando come x = AnnoUscite e come y = Prezzo
-sns.scatterplot(X['AnnoUscita'], X['Prezzo'], hue=X['Labels'], palette=sns.color_palette('hls', np.unique(db.labels_).shape[0]))
-#Impostiamo il titolo del grafico
-plt.title('DBSCAN epsilon = 12.6 e minPts=6')
-#Mostriamo il grafico
-plt.show()
+for i in range(2, 30):
+    #Eseguiamo l'algoritmo KMeans
+    km=KMeans(n_clusters=i, max_iter=1000).fit(X)
+    #Aggiungiamo alla lista la somma di distanza quadrata di ogni campione
+    # dal centro del cluster più vicino
+    clusterErrors.append(km.inertia_)
+    #Calcoliamo i centri del cluster e
+    # prediciamo l'indice del cluster per ogni campione
+    y_predict = km.fit_predict(X)
+    #Assegniamo le coordinate dei centri dei cluster (i centroidi)
+    centroids = km.cluster_centers_
+    #Prevediamo il cluster più vicino a cui appartiene ogni campione presente in X
+    label = km.predict(X)
+    #Stampiamo il Silhouette Score
+    print(f'Silhouette Score(n={i}): {silhouette_score(X,label)}')
